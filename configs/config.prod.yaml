@@ -1,0 +1,28 @@
+environment: production
+
+server:
+  host: 0.0.0.0
+  port: 80
+
+database:
+  max_open_conns: 100
+  max_idle_conns: 20
+  conn_max_lifetime: 30m
+
+workers:
+  concurrency: 10
+
+jwt:
+  expiration: 12h
+
+rate_limit:
+  requests_per_minute: 60
+  burst: 10
+
+logging:
+  level: warn
+  format: json
+
+pricing:
+  base_price_per_gb_per_month: 0.002  # Higher price for production
+  markup_percentage: 25.0

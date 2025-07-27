@@ -1,0 +1,26 @@
+environment: development
+
+server:
+  port: 8080
+
+database:
+  dsn: postgres://dev:dev@localhost:5432/pinning_dev?sslmode=disable
+
+redis:
+  url: redis://localhost:6379/1
+
+ipfs:
+  api_url: http://localhost:5001
+  gateway_url: http://localhost:8080
+
+filecoin:
+  lotus_api: http://localhost:1234/rpc/v0
+  lotus_token: "dev-token"
+  wallet_address: "f1dev-wallet-address"
+
+logging:
+  level: debug
+  format: text
+
+rate_limit:
+  requests_per_minute: 1000  # Higher limit for development

@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: pinning_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d pinning_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ipfs:
+    image: ipfs/kubo:latest
+    ports:
+      - "4001:4001"
+      - "5001:5001"
+      - "8080:8080"
+    volumes:
+      - ipfs_data:/data/ipfs
+    environment:
+      - IPFS_PROFILE=server
+    healthcheck:
+      test: ["CMD", "ipfs", "id"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  lotus:
+    image: filecoin/lotus:latest
+    ports:
+      - "1234:1234"
+      - "2345:2345"
+    volumes:
+      - lotus_data:/root/.lotus
+    environment:
+      - LOTUS_API_LISTENADDRESS=/ip4/0.0.0.0/tcp/1234/http
+      - LOTUS_LIBP2P_LISTENADDRESSES=/ip4/0.0.0.0/tcp/2345
+    command: ["lotus", "daemon", "--api", "0.0.0.0:1234"]
+    healthcheck:
+      test: ["CMD", "lotus", "version"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+
+  pinning-server:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_DSN=postgres://user:password@postgres:5432/pinning_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+      - IPFS_API_URL=http://ipfs:5001
+      - FILECOIN_LOTUS_API=http://lotus:1234/rpc/v0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ipfs:
+        condition: service_healthy
+      lotus:
+        condition: service_healthy
+    command: ["./server"]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  pinning-worker:
+    build: .
+    environment:
+      - DATABASE_DSN=postgres://user:password@postgres:5432/pinning_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+      - IPFS_API_URL=http://ipfs:5001
+      - FILECOIN_LOTUS_API=http://lotus:1234/rpc/v0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ipfs:
+        condition: service_healthy
+      lotus:
+        condition: service_healthy
+    command: ["./worker"]
+    deploy:
+      replicas: 2
+
+volumes:
+  postgres_data:
+  redis_data:
+  ipfs_data:
+  lotus_data:
