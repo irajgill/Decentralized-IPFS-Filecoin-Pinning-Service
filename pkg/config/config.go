@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/spf13/viper"
 )
 
