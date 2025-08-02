@@ -6,9 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gocraft/work"
-	"github.com/sirupsen/logrus"
-
 	"pinning-service/internal/storage"
 	"pinning-service/internal/workers"
 	"pinning-service/pkg/config"
